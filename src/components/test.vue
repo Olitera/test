@@ -1,16 +1,23 @@
 <script>
 import axios from 'axios'
+import Scichart2d from "./Scichart2d.vue";
 
 export default {
-  // mounted() {
-  //   this.makeApiRequest();
-  // },
+
+  components: {
+    Scichart2d
+  },
+
+  mounted() {
+    // this.makeApiRequest();
+  },
 
   data() {
     return {
-      posts: null
+      posts: null,
     }
   },
+
   methods: {
 
     getBasicAuthHeader() {
@@ -38,6 +45,7 @@ export default {
     },
   }
 }
+
 </script>
 <template>
   <button @click="makeApiRequest">Get posts</button>
@@ -46,6 +54,7 @@ export default {
       {{ post.title }}
     </li>
   </ul>
+  <Scichart2d msg="2D Charts" />
 </template>
 <style scoped>
 </style>
