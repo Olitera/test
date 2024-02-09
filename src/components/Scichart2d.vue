@@ -1,89 +1,97 @@
-<template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <div id="scichart-root" style="width: 600px; height: 400px; margin: auto;"></div>
-  </div>
-</template>
-
-<script lang="ts">
-import { defineComponent } from "vue";
+<script>
 import {
-  SciChartSurface,
-  NumericAxis,
+  DateTimeNumericAxis,
+  EllipsePointMarker, FastBubbleRenderableSeries,
   FastLineRenderableSeries,
-  XyDataSeries,
-  EllipsePointMarker,
-  SweepAnimation,
-  SciChartJsNavyTheme,
   NumberRange,
-  MouseWheelZoomModifier,
-  ZoomPanModifier,
-  ZoomExtentsModifier
-} from "scichart";
+  NumericAxis,
+  SciChartJsNavyTheme,
+  SciChartSurface, SweepAnimation,
+  XyDataSeries, XyzDataSeries
+} from 'scichart';
+import axios from 'axios';
 
-async function initSciChart() {
-  const { sciChartSurface, wasmContext } = await SciChartSurface.create("scichart-root", {
+async function initSciChart(data) {
+
+  const { sciChartSurface, wasmContext } = await SciChartSurface.create('scichart-root', {
     theme: new SciChartJsNavyTheme(),
-    title: "SciChart.js First Chart",
+    title: 'SciChart.js First Chart',
     titleStyle: { fontSize: 22 }
   });
 
-  const growBy = new NumberRange(0.1, 0.1);
-  sciChartSurface.xAxes.add(new NumericAxis(wasmContext, { axisTitle: "X Axis", growBy }));
-  sciChartSurface.yAxes.add(new NumericAxis(wasmContext, { axisTitle: "Y Axis", growBy }));
+  const growBy = new NumberRange(1000, 0.1);
+  sciChartSurface.xAxes.add(new DateTimeNumericAxis(wasmContext, { axisTitle: '', growBy }));
+  sciChartSurface.yAxes.add(new NumericAxis(wasmContext, { axisTitle: '', growBy }));
+
+  console.log(data);
+  const xValues = data.map(({ dt })=>dt);
+  const yValues = data.map(({ price })=>price);
+  const zValues = data.map(({ amount })=>amount);
+  console.log(xValues)
 
   sciChartSurface.renderableSeries.add(new FastLineRenderableSeries(wasmContext, {
-    stroke: "steelblue",
+
+    stroke: 'steelblue',
     strokeThickness: 3,
-    dataSeries: new XyDataSeries(wasmContext, {
-      xValues: [0,1,2,3,4,5,6,7,8,9],
-      yValues: [0, 0.0998, 0.1986, 0.2955, 0.3894, 0.4794, 0.5646, 0.6442, 0.7173, 0.7833]
+    dataSeries: new XyzDataSeries(wasmContext, {
+      xValues,
+      yValues,
+      zValues
     }),
-    pointMarker: new EllipsePointMarker(wasmContext, { width: 11, height: 11, fill: "#fff" }),
+    pointMarker: new EllipsePointMarker(wasmContext, { width: 11, height: 11, fill: '#fff' }),
     animation: new SweepAnimation({ duration: 300, fadeEffect: true })
   }));
-
-  sciChartSurface.chartModifiers.add(new MouseWheelZoomModifier(), new ZoomPanModifier(), new ZoomExtentsModifier());
 
   return sciChartSurface;
 }
 
-export default defineComponent({
+export default {
+  mounted() {
+    this.makeApiRequest().then(
+        ({ data }) => this.chartInitializationPromise = initSciChart(data)
+    )
+  },
   data() {
     return {
       chartInitializationPromise: undefined,
     };
   },
-  mounted() {
-    this.chartInitializationPromise = initSciChart();
-  },
   beforeUnmount() {
+    console.log('SciChart2d.vue beforeUnmount');
     this.chartInitializationPromise.then((sciChartSurface) => {
-      console.log("..deleting sciChartSurface");
+      console.log('..deleting sciChartSurface');
       sciChartSurface.delete();
     });
   },
-  name: "scichart2d",
+  name: 'scichart2d',
   props: {
     msg: String
+  },
+  methods: {
+    getBasicAuthHeader() {
+      const username = 'frontend2024';
+      const password = 'test';
+      const base64Credentials = btoa(`${ username }:${ password }`);
+      return `Basic ${ base64Credentials }`;
+    },
+    async makeApiRequest() {
+      const axiosConfig = {
+        headers: {
+          Authorization: this.getBasicAuthHeader(),
+          'Content-Type': 'application/json',
+        },
+      };
+
+      return axios.get('https://rest.statica.pl/rest/stockquotes/gpw:PLKGHM000017?type=trades&dt_from=2010-01-01&limit=10000', axiosConfig);
+    },
+
   }
-});
+};
 </script>
-
+<template>
+  <div class="hello">
+    <div id="scichart-root" style="width: 600px; height: 400px; margin: auto"></div>
+  </div>
+</template>
 <style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
 </style>
-
